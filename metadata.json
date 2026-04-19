@@ -1,0 +1,6 @@
+{
+  "name": "Chronicle: Event Recorder & Planner",
+  "description": "A comprehensive event recording app featuring photo, audio, and note logging with integrated calendar and recurring task management.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": []
+}
