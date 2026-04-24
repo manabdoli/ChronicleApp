@@ -38,7 +38,7 @@ const categoryColors = {
 };
 
 export default function EventCard({ event, onEdit, onDelete }: EventCardProps) {
-  const eventDate = event.date.toDate();
+  const eventDate = event.date;
   const isEventPast = isPast(eventDate) && !isToday(eventDate);
 
   return (

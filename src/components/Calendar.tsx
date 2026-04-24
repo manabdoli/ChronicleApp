@@ -37,7 +37,7 @@ export default function Calendar({ events, onSelectDate, selectedDate }: Calenda
   const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
 
   const getEventsForDay = (day: Date) => {
-    return events.filter(event => isSameDay(event.date.toDate(), day));
+    return events.filter(event => isSameDay(event.date, day));
   };
 
   return (

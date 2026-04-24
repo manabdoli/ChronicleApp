@@ -43,7 +43,7 @@ export default function EventForm({ initialDate, editingEvent, onSubmit, onClose
     if (editingEvent) {
       setTitle(editingEvent.title);
       setDescription(editingEvent.description || '');
-      setDate(format(editingEvent.date.toDate(), "yyyy-MM-dd'T'HH:mm"));
+      setDate(format(editingEvent.date, "yyyy-MM-dd'T'HH:mm"));
       setCategory(editingEvent.category);
       setRecurring(editingEvent.recurring);
       setTags(editingEvent.tags);

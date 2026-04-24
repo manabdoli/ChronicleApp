@@ -1,89 +1,66 @@
 import { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  Timestamp,
-  serverTimestamp 
-} from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
 import { Event, CreateEventInput } from '../types';
-import { onAuthStateChanged, User } from 'firebase/auth';
+
+const LOCAL_STORAGE_KEY = 'chronicle_events';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
 
+  // Load events from localStorage on mount
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
+    const savedEvents = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedEvents) {
+      try {
+        const parsed = JSON.parse(savedEvents);
+        // Convert ISO strings back to Date objects
+        const formatted = parsed.map((e: any) => ({
+          ...e,
+          date: new Date(e.date),
+          createdAt: new Date(e.createdAt),
+          updatedAt: new Date(e.updatedAt)
+        }));
+        setEvents(formatted.sort((a: Event, b: Event) => a.date.getTime() - b.date.getTime()));
+      } catch (error) {
+        console.error('Failed to parse events from local storage', error);
+      }
+    }
+    setLoading(false);
   }, []);
 
+  // Save events to localStorage whenever they change
   useEffect(() => {
-    if (!user) {
-      setEvents([]);
-      setLoading(false);
-      return;
+    if (!loading) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(events));
     }
-
-    const q = query(
-      collection(db, 'events'),
-      where('userId', '==', user.uid),
-      orderBy('date', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const eventData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Event[];
-      setEvents(eventData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
+  }, [events, loading]);
 
   const addEvent = async (input: CreateEventInput) => {
-    if (!user) return;
-
-    await addDoc(collection(db, 'events'), {
+    const newEvent: Event = {
       ...input,
-      date: Timestamp.fromDate(input.date),
-      userId: user.uid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setEvents(prev => [...prev, newEvent].sort((a, b) => a.date.getTime() - b.date.getTime()));
   };
 
   const updateEvent = async (id: string, updates: Partial<CreateEventInput>) => {
-    if (!user) return;
-
-    const docRef = doc(db, 'events', id);
-    const updatePayload: any = {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    };
-
-    if (updates.date) {
-      updatePayload.date = Timestamp.fromDate(updates.date);
-    }
-
-    await updateDoc(docRef, updatePayload);
+    setEvents(prev => prev.map(e => {
+      if (e.id === id) {
+        return {
+          ...e,
+          ...updates,
+          updatedAt: new Date()
+        };
+      }
+      return e;
+    }).sort((a, b) => a.date.getTime() - b.date.getTime()));
   };
 
   const deleteEvent = async (id: string) => {
-    if (!user) return;
-    await deleteDoc(doc(db, 'events', id));
+    setEvents(prev => prev.filter(e => e.id !== id));
   };
 
-  return { events, loading, user, addEvent, updateEvent, deleteEvent };
+  return { events, loading, user: { dummy: true }, addEvent, updateEvent, deleteEvent };
 }

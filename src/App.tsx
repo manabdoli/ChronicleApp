@@ -5,19 +5,15 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  LogIn, 
   Plus, 
   Calendar as CalendarIcon, 
   List as ListIcon, 
   Search, 
-  Filter,
-  LogOut,
   Sparkles,
-  Tag as TagIcon
+  Tag as TagIcon,
+  User as UserIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { auth } from './lib/firebase';
 import { useEvents } from './hooks/useEvents';
 import Calendar from './components/Calendar';
 import EventCard from './components/EventCard';
@@ -26,7 +22,7 @@ import { Event, CreateEventInput } from './types';
 import { cn } from './lib/utils';
 
 export default function App() {
-  const { events, loading, user, addEvent, updateEvent, deleteEvent } = useEvents();
+  const { events, loading, addEvent, updateEvent, deleteEvent } = useEvents();
   const [view, setView] = useState<'calendar' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -49,13 +45,6 @@ export default function App() {
     });
   }, [events, searchQuery, selectedTag]);
 
-  const handleLogin = () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider);
-  };
-
-  const handleLogout = () => signOut(auth);
-
   const handleSubmitForm = async (data: CreateEventInput) => {
     if (editingEvent) {
       await updateEvent(editingEvent.id, data);
@@ -63,6 +52,7 @@ export default function App() {
       await addEvent(data);
     }
     setEditingEvent(null);
+    setIsFormOpen(false);
   };
 
   if (loading) {
@@ -70,34 +60,7 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-white/20 border-t-accent rounded-full animate-spin" />
-          <p className="text-white/60 font-medium animate-pulse">Synchronizing your events...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
-        <div className="max-w-md w-full text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="inline-flex p-4 glass rounded-3xl shadow-2xl rotate-3">
-            <Sparkles className="w-10 h-10 text-accent" />
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-5xl font-black text-white tracking-tight">Chronicle</h1>
-            <p className="text-lg text-white/70 leading-relaxed font-medium">
-              Your personal event log. Record photos, audio, emails, and notes in one seamless calendar.
-            </p>
-          </div>
-          <button 
-            onClick={handleLogin}
-            className="w-full group relative flex items-center justify-center gap-4 py-4 px-6 glass text-white rounded-2xl font-bold text-lg hover:bg-white/10 transition-all active:scale-[0.98] shadow-2xl overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <LogIn className="w-6 h-6 text-accent" />
-            Continue with Google
-          </button>
-          <p className="text-xs text-white/40 font-medium tracking-wide uppercase">Securely stored with Firebase</p>
+          <p className="text-white/60 font-medium animate-pulse">Loading local data...</p>
         </div>
       </div>
     );
@@ -115,9 +78,6 @@ export default function App() {
               </div>
               <h1 className="text-xl font-bold tracking-tight">Chronicle</h1>
             </div>
-            <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-colors">
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
 
           <button 
@@ -188,10 +148,12 @@ export default function App() {
           </nav>
 
           <div className="mt-auto pt-6 border-t border-white/10 flex items-center gap-3">
-            <img src={user.photoURL || ''} alt={user.displayName || ''} className="w-10 h-10 rounded-full border-2 border-white/20" referrerPolicy="no-referrer" />
+            <div className="w-10 h-10 rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center">
+              <UserIcon className="w-5 h-5 text-white/40" />
+            </div>
             <div className="overflow-hidden text-white">
-              <p className="text-sm font-bold truncate">{user.displayName}</p>
-              <p className="text-[11px] text-white/40 truncate">{user.email}</p>
+              <p className="text-sm font-bold truncate">Local User</p>
+              <p className="text-[11px] text-white/40 truncate">Device Storage</p>
             </div>
           </div>
         </aside>
@@ -250,7 +212,7 @@ export default function App() {
                     <Sparkles className="w-12 h-12 text-white/20" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">No events found</h3>
-                  <p className="text-white/50 max-w-xs mx-auto mb-8 font-medium">Record your first event or adjust your filters to see results.</p>
+                  <p className="text-white/50 max-w-xs mx-auto mb-8 font-medium">Record your first event. Everything is saved locally on your device.</p>
                   <button 
                     onClick={() => setIsFormOpen(true)}
                     className="px-6 py-3 bg-accent text-slate-900 font-bold rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-accent/10"
